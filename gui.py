@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import scrolledtext
 from connector import Connector
-import requests
 
 
 class Gui:
@@ -48,10 +47,15 @@ class Gui:
         self.entry.grid(row=0,column=0,padx=5)
     
     def create_buttons(self):
-        self.search_button = tk.Button(self.entry_frame, text="Search", command=lambda: self.connector.response(self.city_var.get()))
+        self.search_button = tk.Button(self.entry_frame, text="Search", command=self.search_weather)
         self.search_button.grid(row=0,column=1, padx=5)
 
-        self.my_location_search_button = tk.Button(self.entry_frame, text="My Location", command=self.search_my_location)
+        self.search_button = tk.Button(
+        self.entry_frame, text="Search", command=self.search_weather)
+        self.search_button.grid(row=0,column=1, padx=5)
+
+        self.my_location_search_button = tk.Button(
+        self.entry_frame, text="My Location", command=self.search_my_location)
         self.my_location_search_button.grid(row=0,column=2, padx=5)
 
         self.theme_button = tk.Button(self.root, text="Toggle Theme", command=lambda : self.switch_theme())
@@ -67,18 +71,34 @@ class Gui:
         else:
             self.data_label.config(text="TODO")
 
+    def search_weather(self):
+        city = self.city_var.get().strip()
+        data = self.connector.response(city if city else None)
+        self._update_display(data)
+
+    def _update_display(self, data):
+        if not data:
+            self.data_label.config(text="Nem sikerült lekérni az adatot.")
+            return
+
+        self.data_label.config(
+        text=f"{data['name']}: {data['description']}, {data['temperature']}°C"
+    )
+        self.updated_time_label.config(
+        text=f"Helyi idő: {data['local_time']}, Napkelte: {data['sunrise']}, Napnyugta: {data['sunset']}"
+    )
+        self.history_box.insert(
+        tk.END,
+        f"{data['name']} - {data['temperature']}°C, {data['description']}\n"
+    )
+        self.history_box.see(tk.END)
+
     def search_my_location(self):
-        try:
-            valasz = requests.get("https://ipinfo.io/json")
-            adat = valasz.json()
-            varos = adat.get("city", "Ismeretlen")
-            if varos != "Ismeretlen":
-                self.connector.response(varos)
-            else:
-                print("Nem sikerült meghatározni a várost.")
-        except Exception as e:
-            print(f"Hiba történt a helymeghatározáskor: {e}")
-    
+        data = self.connector.response(None)
+        self._update_display(data)
+
+
+
 
 
 Gui()
